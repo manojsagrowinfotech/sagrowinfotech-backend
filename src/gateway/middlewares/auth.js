@@ -38,12 +38,6 @@ module.exports = async (req, res, next) => {
       role: decoded.role,
       loginId: loginSession.id,
     };
-    
-    if (req.user.role !== "A") {
-      return res.status(403).json({
-        message: "Access denied. Admin only.",
-      });
-    }
 
     next();
   } catch (err) {

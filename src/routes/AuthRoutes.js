@@ -4,10 +4,12 @@ const authController = require("../controller/AuthController");
 const validate = require("../gateway/middlewares/validate");
 const authValidator = require("../validators/AuthValidator");
 const authMiddleware = require("../gateway/middlewares/auth");
+const adminOnly = require("../gateway/middlewares/admin");
 
 router.post(
   "/register",
   authMiddleware,
+  adminOnly,
   validate(authValidator.registerSchema),
   authController.register
 );
