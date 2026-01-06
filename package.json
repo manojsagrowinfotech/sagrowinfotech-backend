@@ -1,5 +1,5 @@
 {
-  "name": "sagrowinfotech-backend",
+  "name": "sagrowinfo-backend",
   "version": "1.0.0",
   "description": "Backend API for Sagrow Infotech platform built with Node.js, Express, and PostgreSQL",
   "main": "server.js",
