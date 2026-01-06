@@ -1,17 +1,18 @@
 const allowedOrigins = [
-  'http://localhost:4000',
-  'https://your-frontend-domain.com'
+  'https://sagrowinfotech.vercel.app'
 ];
 
 module.exports = {
   origin: function (origin, callback) {
-    // Allow mobile apps / Postman
+    // Allow Postman / mobile apps (no origin)
     if (!origin) return callback(null, true);
 
+    // Only allow requests from your frontend
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
+    // Block everything else
     return callback(new Error('CORS not allowed'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],

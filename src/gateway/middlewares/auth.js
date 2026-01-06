@@ -25,13 +25,6 @@ module.exports = async (req, res, next) => {
         .status(401)
         .json({ message: "Session expired. Please login again." });
     }
-    // if (loginSession.ip_address !== requestIp) {
-    //   loginSession.is_active = false;
-    //   await loginSession.save();
-    //   return res
-    //     .status(403)
-    //     .json({ message: "IP changed. Please login again." });
-    // }
 
     req.user = {
       userId: decoded.userId,

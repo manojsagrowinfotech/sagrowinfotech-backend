@@ -48,17 +48,20 @@ exports.loginUser = async (request, meta) => {
   if (!user) throw new Error("Invalid credentials");
   if (user.isLocked) throw new Error("Account locked");
 
-  const activeLogin = await Login.findOne({
-    where: {
-      user_id: user.id,
-      is_active: true,
-      expires_at: { [Op.gt]: new Date() },
+  // 🔹 Logout all active sessions (if any)
+  await Login.update(
+    {
+      is_active: false,
+      logged_out_at: new Date(),
     },
-  });
-
-  if (activeLogin) {
-    throw new Error("User already logged in from another session");
-  }
+    {
+      where: {
+        user_id: user.id,
+        is_active: true,
+        expires_at: { [Op.gt]: new Date() },
+      },
+    }
+  );
 
   const isMatch = await bcrypt.compare(request.password, user.passwordHash);
 
@@ -69,11 +72,12 @@ exports.loginUser = async (request, meta) => {
     throw new Error("Invalid credentials");
   }
 
-  user.login_failed = 0;
+  // Reset failed count
+  user.loginFailed = 0;
   await user.save();
 
-  const ACCESS_TOKEN_TTL = 30 * 60;
-  const REFRESH_TOKEN_TTL = 3 * 60 * 60;
+  const ACCESS_TOKEN_TTL = 30 * 60; // 30 mins
+  const REFRESH_TOKEN_TTL = 3 * 60 * 60; // 3 hrs
 
   const accessToken = jwt.sign(
     { userId: user.id, role: user.role },
@@ -84,9 +88,7 @@ exports.loginUser = async (request, meta) => {
   const refreshToken = jwt.sign(
     { userId: user.id, role: user.role },
     process.env.JWT_SECRET,
-    {
-      expiresIn: REFRESH_TOKEN_TTL,
-    }
+    { expiresIn: REFRESH_TOKEN_TTL }
   );
 
   await Login.create({
@@ -96,6 +98,7 @@ exports.loginUser = async (request, meta) => {
     refresh_token_hash: hashToken(refreshToken),
     ip_address: ipAddress,
     user_agent: userAgent,
+    is_active: true,
     expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL * 1000),
     created_by: user.emailId,
   });
