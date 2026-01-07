@@ -97,14 +97,14 @@ exports.deleteStudent = async (id) => {
   await student.destroy();
 };
 
-exports.getExperienceLevels = async () => {
-  return Object.values(EXPERIENCE_LEVEL);
-};
+exports.getStates = async () => mapMasterData(STATES);
+exports.getExperienceLevels = async () => mapMasterData(EXPERIENCE_LEVEL);
+exports.getYearsOfExperience = async () => mapMasterData(YEARS_OF_EXPERIENCE);
 
-exports.getYearsOfExperience = async () => {
-  return Object.values(YEARS_OF_EXPERIENCE);
-};
+const mapMasterData = (obj) =>
+  Object.entries(obj).map(([key, value]) => ({
+    key,
+    code: value.CODE,
+    label: value.LABEL
+  }));
 
-exports.getStates = async () => {
-  return Object.values(STATES);
-};

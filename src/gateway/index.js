@@ -1,20 +1,20 @@
 const express = require("express");
 const helmet = require("helmet");
-// const cors = require("cors");
+const cors = require("cors");
 
 const routes = require("./routes");
 const authMiddleware = require("./middlewares/auth");
 const adminMiddleware = require("./middlewares/admin");
 const { generalLimiter } = require("./middlewares/rateLimiter"); // ✅ destructure here
 const logger = require("./middlewares/logger");
-// const corsOptions = require("../config/cors");
+const corsOptions = require("../config/cors");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
 
 // Global middleware
 app.use(helmet());
-// app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(logger);
 app.use(generalLimiter); // ✅ now defined
