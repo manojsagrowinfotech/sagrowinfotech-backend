@@ -1,15 +1,15 @@
 const { Op } = require("sequelize");
 const { Student } = require("../models");
 const AppError = require("../errors/DomainError");
-const { getStateCode, getStateLabel } = require("../enums/States");
+const { getStateCode, getStateLabel, STATES } = require("../enums/States");
 const moment = require("moment");
 const {
   getExperienceTypeCode,
-  getExperienceTypeLabel,
+  getExperienceTypeLabel,EXPERIENCE_LEVEL,
 } = require("../enums/ExperienceLevel");
 const {
   getExperienceCode,
-  getExperienceLabel,
+  getExperienceLabel,YEARS_OF_EXPERIENCE,
 } = require("../enums/YearsOfExperience");
 
 exports.createStudent = async (payload) => {
@@ -95,4 +95,16 @@ exports.deleteStudent = async (id) => {
   const student = await Student.findByPk(id);
   if (!student) throw new AppError("Student not found", 404);
   await student.destroy();
+};
+
+exports.getExperienceLevels = async () => {
+  return Object.values(EXPERIENCE_LEVEL);
+};
+
+exports.getYearsOfExperience = async () => {
+  return Object.values(YEARS_OF_EXPERIENCE);
+};
+
+exports.getStates = async () => {
+  return Object.values(STATES);
 };

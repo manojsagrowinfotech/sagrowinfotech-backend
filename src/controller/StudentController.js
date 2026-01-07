@@ -50,3 +50,30 @@ exports.deleteStudent = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.getExperienceLevels = async (req, res, next) => {
+  try {
+    const experienceLevels = await studentService.getExperienceLevels();
+    res.json({ experienceLevels });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getYearsOfExperience = async (req, res, next) => {
+  try {
+    const yearsOfExperience = await studentService.getYearsOfExperience();
+    res.json({ yearsOfExperience });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getStates = async (req, res, next) => {
+  try {
+    const states = await studentService.getStates();
+    res.json({ states });
+  } catch (err) {
+    next(err);
+  }
+};

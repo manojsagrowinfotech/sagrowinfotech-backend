@@ -13,4 +13,8 @@ router.post(
 router.get("/retrive", authMiddleware, studentController.listStudents);
 router.delete("/delete/:id", authMiddleware, studentController.deleteStudent);
 
+router.get("/experienceLevel", studentController.getExperienceLevels);
+router.get("/yearsOfExperience", studentController.getYearsOfExperience);
+router.get("/states", studentController.getStates);
+
 module.exports = router;
