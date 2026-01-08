@@ -76,7 +76,7 @@ exports.loginUser = async (request, meta) => {
   user.loginFailed = 0;
   await user.save();
 
-  const ACCESS_TOKEN_TTL = 30 * 60; // 30 mins
+  const ACCESS_TOKEN_TTL = 5 * 60; // 30 mins
   const REFRESH_TOKEN_TTL = 3 * 60 * 60; // 3 hrs
 
   const accessToken = jwt.sign(
@@ -114,7 +114,7 @@ exports.loginUser = async (request, meta) => {
 exports.refreshToken = async (request, meta) => {
   const { ipAddress } = meta;
 
-  const ACCESS_TOKEN_TTL = 30 * 60;
+  const ACCESS_TOKEN_TTL = 5 * 60;
   const REFRESH_TOKEN_TTL = 3 * 60 * 60;
 
   // Verify refresh token

@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { Login } = require("../../models");
+const { hashToken } = require("../../utils/token");
 // const getClientIp = require("../../utils/getClientIp");
 
 module.exports = async (req, res, next) => {
@@ -20,7 +21,13 @@ module.exports = async (req, res, next) => {
       },
     });
 
-    if (!loginSession) {
+    if (hashToken(token) !== loginSession.access_token_hash) {
+      return res
+        .status(401)
+        .json({ message: "Token mismatch. Please login again." });
+    }
+
+    if (!loginSession || !loginSession.dataValues?.is_active) {
       return res
         .status(401)
         .json({ message: "Session expired. Please login again." });
