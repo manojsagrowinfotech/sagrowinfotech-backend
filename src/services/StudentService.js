@@ -42,6 +42,7 @@ exports.createStudent = async (payload) => {
         : null,
     state: getStateCode(payload.state),
     createdBy: payload.createdBy,
+    preferredTechnicalDomain: payload.preferredTechnicalDomain,
   };
 
   return Student.create(dbPayload);
@@ -86,6 +87,7 @@ exports.listStudents = async (filter) => {
     state: getStateLabel(student.state),
     createdBy: student.createdBy,
     createdTime: student.created_time,
+    preferredTechnicalDomain: student.preferredTechnicalDomain,
   }));
 
   return { rows: mappedRows, count };

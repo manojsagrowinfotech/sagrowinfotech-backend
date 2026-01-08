@@ -36,6 +36,8 @@ exports.createStudentSchema = Joi.object({
       otherwise: Joi.allow(null),
     }),
 
+  preferredTechnicalDomain: Joi.string().max(100).required(),
+
   state: Joi.string()
     .uppercase()
     .valid(...STATE_KEYS)

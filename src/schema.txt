@@ -45,6 +45,7 @@ CREATE TABLE sagrow_admin.students (
     experience_level character(1),
     years_of_experience character(1),
     state character(1),
+    preferred_technical_domain VARCHAR(100),
     created_time timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
     created_by character varying(50),
     CONSTRAINT students_pkey PRIMARY KEY (id),

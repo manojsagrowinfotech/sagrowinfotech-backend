@@ -25,6 +25,12 @@ module.exports = (sequelize, DataTypes) => {
         field: "email_id",
       },
 
+      preferredTechnicalDomain: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        field: "preferred_technical_domain",
+      },
+
       experienceLevel: {
         type: DataTypes.CHAR(1),
         allowNull: false,

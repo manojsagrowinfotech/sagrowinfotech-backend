@@ -32,6 +32,7 @@ exports.downloadStudentExcel = async ({ fromDate, toDate, userId }) => {
     { header: "Name", key: "name", width: 30 },
     { header: "Mobile No", key: "mobileNo", width: 15 },
     { header: "Email ID", key: "emailId", width: 30 },
+    { header: "Preferred Technical Domain", key: "preferredTechnicalDomain", width: 30 },
     { header: "Experience Level", key: "experienceLevel", width: 15 },
     { header: "Years of Experience", key: "yearsOfExperience", width: 15 },
     { header: "State", key: "state", width: 20 },
@@ -52,6 +53,7 @@ exports.downloadStudentExcel = async ({ fromDate, toDate, userId }) => {
       state: getStateLabel(s.state),
       createdBy: s.createdBy,
       createdTime: s.created_time,
+      preferredTechnicalDomain: s.preferredTechnicalDomain,
     });
   });
 

@@ -8,6 +8,8 @@ class CreateStudentRequest extends BaseRequest {
     this._data.experienceLevel = this._raw.experienceLevel;
     this._data.yearsOfExperience = this._raw.yearsOfExperience;
     this._data.state = this._raw.state;
+    this._data.preferredTechnicalDomain =
+      this._raw.preferredTechnicalDomain?.trim();
     this._data.createdBy = "SYSTEM";
   }
   get name() {
@@ -34,9 +36,14 @@ class CreateStudentRequest extends BaseRequest {
     return this._data.state;
   }
 
+  get preferredTechnicalDomain() {
+    return this._data.preferredTechnicalDomain;
+  }
+
   get createdBy() {
     return this._data.createdBy;
   }
+
   toPayload() {
     return {
       name: this.name,
@@ -46,6 +53,7 @@ class CreateStudentRequest extends BaseRequest {
       yearsOfExperience: this.yearsOfExperience,
       state: this.state,
       createdBy: this.createdBy,
+      preferredTechnicalDomain: this.preferredTechnicalDomain,
     };
   }
 }
