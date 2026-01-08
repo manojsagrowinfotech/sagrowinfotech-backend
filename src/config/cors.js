@@ -1,6 +1,5 @@
 const allowedOrigins = [
-  'https://sagrowinfotech.vercel.app',
-  "http://localhost:3001"
+  "https://www.sagrowinfotech.com/",
 ];
 
 module.exports = {
