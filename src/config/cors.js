@@ -1,18 +1,15 @@
 const allowedOrigins = [
-  "https://www.sagrowinfotech.com/",
+  "https://www.sagrowinfotech.com",
 ];
 
 module.exports = {
   origin: function (origin, callback) {
-    // Allow Postman / mobile apps (no origin)
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true); // Postman or mobile apps
 
-    // Only allow requests from your frontend
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
-    // Block everything else
     return callback(new Error('CORS not allowed'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
