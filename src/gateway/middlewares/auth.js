@@ -30,6 +30,14 @@ module.exports = async (req, res, next) => {
         .json({ message: "Session expired. Please login again." });
     }
 
+    // ✅ Validate that the provided token matches the stored access token
+    const tokenMatches = hashToken(token) === loginSession.access_token_hash;
+    if (!tokenMatches) {
+      return res
+        .status(401)
+        .json({ message: "Token mismatch. Please login again." });
+    }
+
     req.user = {
       userId: decoded.userId,
       role: decoded.role,
