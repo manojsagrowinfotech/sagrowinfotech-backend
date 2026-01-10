@@ -48,20 +48,12 @@ exports.loginUser = async (request, meta) => {
   if (!user) throw new Error("Invalid credentials");
   if (user.isLocked) throw new Error("Account locked");
 
-  // 🔹 Logout all active sessions (if any)
-  await Login.update(
-    {
-      is_active: false,
-      logged_out_at: new Date(),
+  // Destroy existing active sessions
+  await Login.destroy({
+    where: {
+      user_id: user.id,
     },
-    {
-      where: {
-        user_id: user.id,
-        is_active: true,
-        expires_at: { [Op.gt]: new Date() },
-      },
-    }
-  );
+  });
 
   const isMatch = await bcrypt.compare(request.password, user.passwordHash);
 
