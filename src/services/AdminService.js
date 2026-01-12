@@ -2,8 +2,10 @@ const { User } = require("../models");
 
 exports.getLockedAccounts = async () => {
   return await User.findAll({
-    where: { is_locked: true },
-    attributes: { exclude: ["password_hash", "refresh_token"] },
+    where: { isLocked: true },
+    attributes: {
+      exclude: ["passwordHash", "refreshToken"],
+    },
   });
 };
 

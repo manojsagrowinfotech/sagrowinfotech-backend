@@ -1,7 +1,23 @@
 const { User } = require("../models");
 
 exports.getProfile = async (emailId) => {
-  const user = await User.findOne({ where: { email_id: emailId } });
+  const user = await User.findOne({
+    where: { email_id: emailId },
+    attributes: {
+      exclude: [
+        "passwordHash",
+        "refreshToken",
+        "loginFailed",
+        "isLocked",
+        "otp",
+        "otpExpires",
+        "resetPasswordToken",
+        "resetPasswordExpires",
+        "otpResendCount",
+        "otpLastSentAt",
+      ],
+    },
+  });
 
   if (!user) {
     const err = new Error("User not found");

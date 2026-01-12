@@ -4,8 +4,19 @@ const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
 const { getRoleCode } = require("../enums/Roles");
 const { getStateCode } = require("../enums/States");
-const crypto = require("crypto");
 const { hashToken } = require("../utils/token");
+const {
+  generateOTP,
+  hashOTP,
+  generateResetToken,
+} = require("../utils/otpUtil");
+const { sendEmail } = require("../utils/sendEmail");
+const DomainError = require("../errors/DomainError");
+
+// Configuration
+const OTP_EXPIRY_MIN = 5;
+const MAX_RESENDS = 3;
+const RESEND_COOLDOWN_SEC = 60;
 
 exports.registerUser = async (request) => {
   const existing = await User.findOne({
@@ -201,41 +212,235 @@ exports.logoutUser = async (request, meta) => {
   return { sessionsLoggedOut: logins.length };
 };
 
-exports.forgotPassword = async (emailId) => {
-  const user = await User.findOne({ where: { email_id: emailId } });
+exports.sendOTP = async (emailId) => {
+  const user = await User.findOne({ where: { emailId } });
+  if (!user) throw new DomainError("User not found", 404);
+  if (user.isLocked) throw new DomainError("Account locked", 423);
 
-  if (!user) {
-    const error = new Error("User not found");
-    error.statusCode = 404;
-    throw error;
+  const otp = generateOTP();
+  user.otp = hashOTP(otp);
+  user.otpExpires = new Date(Date.now() + OTP_EXPIRY_MIN * 60 * 1000);
+  user.otpResendCount = 1;
+  user.otpLastSentAt = new Date();
+  user.loginFailed = 0;
+  await user.save();
+
+  await sendEmail({
+    to: emailId,
+    subject: "Password Reset OTP",
+    html: forgotPasswordTemplate(user.fullName, otp),
+  });
+
+  return { message: "OTP sent successfully" };
+};
+
+exports.resendOTP = async (emailId) => {
+  const user = await User.findOne({ where: { emailId } });
+  if (!user) throw new DomainError("User not found", 404);
+  if (user.isLocked) throw new DomainError("Account locked", 423);
+
+  // 1️⃣ Cooldown check
+  if (user.otpLastSentAt) {
+    const elapsed = Date.now() - user.otpLastSentAt.getTime();
+    const waitTime = RESEND_COOLDOWN_SEC * 1000 - elapsed;
+
+    if (waitTime > 0) {
+      throw new DomainError(
+        `Please wait ${Math.ceil(waitTime / 1000)} seconds before resending OTP`,
+        429
+      );
+    }
   }
 
-  const resetToken = crypto.randomBytes(32).toString("hex");
-  const hashedToken = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
+  // 2️⃣ Resend limit check (DO NOT LOCK ACCOUNT)
+  if (user.otpResendCount >= MAX_RESENDS) {
+    throw new DomainError("OTP resend limit exceeded. Try again later.", 429);
+  }
 
-  user.resetPasswordToken = hashedToken;
-  user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
+  // 3️⃣ Generate new OTP
+  const otp = generateOTP();
+  user.otp = hashOTP(otp);
+  user.otpExpires = new Date(Date.now() + OTP_EXPIRY_MIN * 60 * 1000);
+  user.otpResendCount += 1;
+  user.otpLastSentAt = new Date();
+  user.loginFailed = 0;
 
   await user.save();
-  return hashedToken;
+
+  // 4️⃣ Send OTP email
+  await sendEmail({
+    to: emailId,
+    subject: "OTP for Password Reset",
+    html: forgotPasswordTemplate(user.fullName, otp),
+  });
+
+  return { message: "OTP resent successfully" };
+};
+
+
+exports.verifyOTP = async (emailId, otp) => {
+  if (!/^\d{6}$/.test(otp)) {
+    throw new DomainError("Invalid OTP format", 400);
+  }
+
+  const user = await User.findOne({ where: { emailId } });
+  if (!user || !user.otp) {
+    throw new DomainError("OTP invalid or expired", 400);
+  }
+
+  if (user.isLocked) {
+    throw new DomainError("Account locked", 423);
+  }
+
+  // ✅ CORRECT TIME COMPARISON
+  if (Date.now() > user.otpExpires.getTime()) {
+    await clearOTP(user);
+    throw new DomainError("OTP expired", 410);
+  }
+
+  if (hashOTP(otp) !== user.otp) {
+    user.loginFailed += 1;
+    if (user.loginFailed >= 3) {
+      user.isLocked = true;
+    }
+    await user.save();
+    throw new DomainError("Incorrect OTP", 401);
+  }
+
+  // OTP SUCCESS
+  await clearOTP(user);
+
+  const resetToken = generateResetToken();
+  user.resetPasswordToken = hashOTP(resetToken);
+  user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
+  await user.save();
+
+  return { resetToken };
 };
 
 exports.resetPassword = async (resetToken, newPassword) => {
   const user = await User.findOne({
-    where: {
-      reset_password_token: resetToken,
-    },
+    where: { resetPasswordToken: hashToken(resetToken) },
   });
-  if (!user) {
-    throw new Error("Invalid or expired reset token");
-  }
+  if (!user || !user.resetPasswordToken)
+    throw new DomainError("Invalid or expired reset token", 400);
+  if (user.resetPasswordExpires < new Date())
+    throw new DomainError("Reset token expired", 410);
 
   user.passwordHash = await bcrypt.hash(newPassword, 10);
   user.resetPasswordToken = null;
   user.resetPasswordExpires = null;
   await Login.update({ is_active: false }, { where: { user_id: user.id } });
   await user.save();
+
+  return { message: "Password reset successfully" };
+};
+
+const clearOTP = async (user) => {
+  user.otp = null;
+  user.otpExpires = null;
+  user.otpResendCount = 0;
+  user.otpLastSentAt = null;
+  user.loginFailed = 0;
+  await user.save();
+};
+
+const forgotPasswordTemplate = (name, otp) => {
+  return `
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>OTP Verification</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f4f6f8;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .wrapper {
+        width: 100%;
+        padding: 30px 0;
+      }
+      .container {
+        max-width: 520px;
+        margin: auto;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      }
+      .content {
+        color: #374151;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .otp-box {
+        margin: 25px 0;
+        text-align: center;
+      }
+      .otp {
+        display: inline-block;
+        padding: 14px 26px;
+        font-size: 28px;
+        font-weight: bold;
+        letter-spacing: 6px;
+        background: #f0f7ff;
+        color: #1d4ed8;
+        border-radius: 8px;
+        border: 1px dashed #93c5fd;
+      }
+      .note {
+        background: #f9fafb;
+        border-left: 4px solid #2563eb;
+        padding: 12px;
+        margin-top: 20px;
+        font-size: 13px;
+      }
+      .footer {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 12px;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="container">
+
+        <div class="content">
+          <p>Hello <strong>${name || "User"}</strong>,</p>
+
+          <p>
+            We received a request to reset your account password.
+            Please use the One-Time Password (OTP) below to continue.
+          </p>
+
+          <div class="otp-box">
+            <div class="otp">${otp}</div>
+          </div>
+
+          <p>
+            This OTP is valid for <strong>5 minutes</strong>.
+            Do not share this code with anyone.
+          </p>
+
+          <div class="note">
+            If you did not request this, you can safely ignore this email.
+            Your account remains secure.
+          </div>
+        </div>
+
+        <div class="footer">
+          © ${new Date().getFullYear()} Sagrow Infotech. All rights reserved.
+        </div>
+
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
 };
