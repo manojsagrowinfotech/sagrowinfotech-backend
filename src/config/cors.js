@@ -1,7 +1,6 @@
-const allowedOrigins = [
-  "https://www.sagrowinfotech.com",
-  "https://sagrowinfotech.com",
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
+  : [];
 
 module.exports = {
   origin: function (origin, callback) {

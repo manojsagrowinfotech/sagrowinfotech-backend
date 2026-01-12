@@ -59,6 +59,28 @@ module.exports = (sequelize, DataTypes) => {
         field: "reset_password_expires",
       },
 
+      otp: {
+        type: DataTypes.STRING,
+        field: "otp",
+      },
+
+      otpExpires: {
+        type: DataTypes.DATE,
+        field: "otp_expires",
+      },
+
+      otpResendCount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0,
+        allowNull: false,
+        field: "otp_resend_count",
+      },
+
+      otpLastSentAt: {
+        type: DataTypes.DATE,
+        field: "otp_last_sent_at",
+      },
+
       loginFailed: {
         type: DataTypes.INTEGER,
         defaultValue: 0,

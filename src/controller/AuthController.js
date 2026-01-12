@@ -82,20 +82,35 @@ exports.logout = async (req, res) => {
 exports.forgotPassword = async (req, res) => {
   try {
     const emailId = req.params.emailId;
-    if (!emailId) {
-      return res.status(400).json({ message: "Email ID is required" });
-    }
+    const result = await authService.sendOTP(emailId);
 
-    const response = await authService.forgotPassword(emailId);
-
-    return res.json({
-      resetToken:response,
-    });
+    return res.json(result);
   } catch (err) {
-    console.error(err);
-    return res.status(err.statusCode || 500).json({
-      message: err.message || "Internal server error",
-    });
+    return res.status(err.status || 500).json({ message: err.message });
+  }
+};
+
+exports.resendOTP = async (req, res) => {
+  try {
+    const emailId = req.params.emailId;
+    const result = await authService.resendOTP(emailId);
+
+    return res.json(result);
+  } catch (err) {
+    return res.status(err.status || 500).json({ message: err.message });
+  }
+};
+
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { emailId, otp } = req.body;
+
+    const result = await authService.verifyOTP(emailId, otp);
+
+    // result contains resetToken
+    return res.json(result);
+  } catch (err) {
+    return res.status(err.status || 500).json({ message: err.message });
   }
 };
 
@@ -104,12 +119,15 @@ exports.resetPassword = async (req, res) => {
     const request = new ResetPasswordRequest(req.body);
     request.validate();
 
-    await authService.resetPassword(request.resetToken, request.newPassword);
+    const result = await authService.resetPassword(
+      request.resetToken,
+      request.newPassword
+    );
 
-    res.json({ message: "Password reset successful" });
+    return res.json(result);
   } catch (err) {
-    res.status(400).json({
-      message: err.message || "Reset password failed",
-    });
+    return res
+      .status(err.status || 400)
+      .json({ message: err.message || "Reset password failed" });
   }
 };
