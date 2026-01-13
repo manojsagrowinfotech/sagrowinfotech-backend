@@ -224,13 +224,12 @@ exports.sendOTP = async (emailId) => {
   user.otpLastSentAt = new Date();
   user.loginFailed = 0;
   await user.save();
-console.log("OTP for testing purposes:", otp);
+
   await sendEmail({
     to: emailId,
     subject: "Password Reset OTP",
     html: forgotPasswordTemplate(user.fullName, otp),
   });
-  console.log("OTP for tested purposes:", otp);
 
   return { message: "OTP sent successfully" };
 };
@@ -247,7 +246,9 @@ exports.resendOTP = async (emailId) => {
 
     if (waitTime > 0) {
       throw new DomainError(
-        `Please wait ${Math.ceil(waitTime / 1000)} seconds before resending OTP`,
+        `Please wait ${Math.ceil(
+          waitTime / 1000
+        )} seconds before resending OTP`,
         429
       );
     }
@@ -277,7 +278,6 @@ exports.resendOTP = async (emailId) => {
 
   return { message: "OTP resent successfully" };
 };
-
 
 exports.verifyOTP = async (emailId, otp) => {
   if (!/^\d{6}$/.test(otp)) {
