@@ -224,12 +224,13 @@ exports.sendOTP = async (emailId) => {
   user.otpLastSentAt = new Date();
   user.loginFailed = 0;
   await user.save();
-
+console.log("OTP for testing purposes:", otp);
   await sendEmail({
     to: emailId,
     subject: "Password Reset OTP",
     html: forgotPasswordTemplate(user.fullName, otp),
   });
+  console.log("OTP for tested purposes:", otp);
 
   return { message: "OTP sent successfully" };
 };
