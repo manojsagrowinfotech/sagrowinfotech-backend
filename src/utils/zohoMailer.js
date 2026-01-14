@@ -35,7 +35,7 @@ async function getAccessToken() {
 }
 
 // Send Email via Zoho
-export async function sendEmail({ to, subject, html }) {
+async function sendEmail({ to, subject, html }) {
   const accessToken = await getAccessToken();
 
   const emailData = {
