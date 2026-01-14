@@ -9,6 +9,8 @@ const ZOHO_API_DOMAIN =
   process.env.ZOHO_API_DOMAIN || "https://www.zohoapis.in";
 const ZOHO_FROM_EMAIL = process.env.ZOHO_FROM_EMAIL;
 
+const ZOHO_BASE_URL = "https://mail.zoho.in/api";
+
 // Get Access Token
 async function getAccessToken() {
   try {
@@ -35,36 +37,35 @@ async function getAccessToken() {
 }
 
 // Send Email via Zoho
-async function sendEmail({ to, subject, html }) {
-  const accessToken = await getAccessToken();
-
-  const emailData = {
-    fromAddress: process.env.ZOHO_FROM_EMAIL,
-    toAddress: to,
-    subject,
-    content: html,
-    contentType: "html",
-  };
-
+async function sendEmail(to, subject, html) {
   try {
-    const response = await axios.post(
-      `${process.env.ZOHO_API_DOMAIN}/mail/v1/messages`,
-      emailData,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
+    const accessToken = process.env.ZOHO_ACCESS_TOKEN;
+    const accountId = process.env.ZOHO_ACCOUNT_ID;
+
+    if (!accessToken || !accountId) {
+      throw new Error("Zoho access token or account ID missing");
+    }
+
+    const url = `${ZOHO_BASE_URL}/accounts/${accountId}/messages`;
+
+    const payload = {
+      fromAddress: process.env.ZOHO_FROM_EMAIL, // must be Zoho mailbox
+      toAddress: to,
+      subject,
+      content: html,
+      mailFormat: "html"
+    };
+
+    await axios.post(url, payload, {
+      headers: {
+        Authorization: `Zoho-oauthtoken ${accessToken}`,
+        "Content-Type": "application/json"
       }
-    );
-    console.log("Email sent:", response.data);
-    return response.data;
-  } catch (err) {
-    console.error("Zoho Email Error:", {
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message,
     });
+
+    return true;
+  } catch (err) {
+    console.error("Zoho Email Error:", err.response?.data || err.message);
     throw new Error("Unable to send email");
   }
 }
