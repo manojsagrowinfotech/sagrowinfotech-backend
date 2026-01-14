@@ -2,7 +2,13 @@ import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
-// 🟢 Get access token from refresh token
+const ZOHO_CLIENT_ID = process.env.ZOHO_CLIENT_ID;
+const ZOHO_CLIENT_SECRET = process.env.ZOHO_CLIENT_SECRET;
+const ZOHO_REFRESH_TOKEN = process.env.ZOHO_REFRESH_TOKEN;
+const ZOHO_API_DOMAIN = process.env.ZOHO_API_DOMAIN || "https://www.zohoapis.in";
+const ZOHO_FROM_EMAIL = process.env.ZOHO_FROM_EMAIL;
+
+// Get Access Token
 async function getAccessToken() {
   try {
     const response = await axios.post(
@@ -10,51 +16,47 @@ async function getAccessToken() {
       null,
       {
         params: {
-          refresh_token: process.env.ZOHO_REFRESH_TOKEN,
-          client_id: process.env.ZOHO_CLIENT_ID,
-          client_secret: process.env.ZOHO_CLIENT_SECRET,
+          refresh_token: ZOHO_REFRESH_TOKEN,
+          client_id: ZOHO_CLIENT_ID,
+          client_secret: ZOHO_CLIENT_SECRET,
           grant_type: "refresh_token",
         },
       }
     );
     return response.data.access_token;
   } catch (err) {
-    console.error("Error getting access token:", err.response?.data || err.message);
-    throw err;
+    console.error("Error getting Zoho access token:", err.response?.data || err.message);
+    throw new Error("Unable to get Zoho access token");
   }
 }
 
-// 🟢 Send email using Zoho Mail API
+// Send Email via Zoho
 async function sendEmail({ to, subject, html }) {
   const accessToken = await getAccessToken();
 
   const emailData = {
-    fromAddress: process.env.ZOHO_FROM_EMAIL,
+    fromAddress: ZOHO_FROM_EMAIL,
     toAddress: to,
     subject,
     content: html,
   };
 
   try {
-    const response = await axios.post(
-      `${process.env.ZOHO_API_DOMAIN}/mail/v1/messages`,
-      emailData,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    console.log("Email sent:", response.data);
+    const response = await axios.post(`${ZOHO_API_DOMAIN}/mail/v1/messages`, emailData, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+    console.log("Email sent successfully:", response.data);
     return response.data;
   } catch (err) {
-    console.error("Error sending email:", err.response?.data || err.message);
-    throw err;
+    console.error("Error sending email via Zoho:", err.response?.data || err.message);
+    throw new Error("Unable to send email");
   }
 }
 
-// 🟢 OTP Email Template
+// OTP Email Template
 function forgotPasswordTemplate(name, otp) {
   return `
   <!DOCTYPE html>
@@ -81,7 +83,7 @@ function forgotPasswordTemplate(name, otp) {
           <p>Hello <strong>${name || "User"}</strong>,</p>
           <p>We received a request to reset your account password. Please use the One-Time Password (OTP) below to continue.</p>
           <div class="otp-box"><div class="otp">${otp}</div></div>
-          <p>This OTP is valid for <strong>${process.env.OTP_EXPIRY_MIN} minutes</strong>. Do not share this code with anyone.</p>
+          <p>This OTP is valid for <strong>${process.env.OTP_EXPIRY_MIN || 5} minutes</strong>. Do not share this code with anyone.</p>
           <div class="note">If you did not request this, you can safely ignore this email. Your account remains secure.</div>
         </div>
         <div class="footer">© ${new Date().getFullYear()} Sagrow Infotech. All rights reserved.</div>
