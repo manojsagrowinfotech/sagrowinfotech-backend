@@ -1,22 +1,20 @@
-require("dotenv").config();
-const { User, Login, Logout } = require("../models");
-const jwt = require("jsonwebtoken");
-const { Op } = require("sequelize");
-const bcrypt = require("bcryptjs");
-const { getRoleCode } = require("../enums/Roles");
-const { getStateCode } = require("../enums/States");
-const { hashToken } = require("../utils/token");
-const { generateOTP, hashOTP, generateResetToken } = require("../utils/otpUtil");
-const { sendEmail, forgotPasswordTemplate } = require("../utils/zohoMailer");
-const DomainError = require("../errors/DomainError");
-
+import { User, Login, Logout } from "../models/index.js";
+import jwt from "jsonwebtoken";
+import { Op } from "sequelize";
+import bcrypt from "bcryptjs";
+import { getRoleCode } from "../enums/Roles.js";
+import { getStateCode } from "../enums/States.js";
+import { hashToken } from "../utils/token.js";
+import { generateOTP, hashOTP, generateResetToken } from "../utils/otpUtil.js";
+import { sendEmail, forgotPasswordTemplate } from "../utils/zohoMailer.js";
+import DomainError from "../errors/DomainError.js";
 
 // Configuration
 const OTP_EXPIRY_MIN = Number(process.env.OTP_EXPIRY_MIN);
 const RESEND_COOLDOWN_SEC = Number(process.env.RESEND_COOLDOWN_SEC);
 const MAX_RESENDS = Number(process.env.MAX_RESENDS);
 
-exports.registerUser = async (request) => {
+export const registerUser = async (request) => {
   const existing = await User.findOne({
     where: {
       [Op.or]: [{ email_id: request.emailId }, { mobile_no: request.mobileNo }],
@@ -47,7 +45,7 @@ exports.registerUser = async (request) => {
   return user;
 };
 
-exports.loginUser = async (request, meta) => {
+export const loginUser = async (request, meta) => {
   const { ipAddress, userAgent } = meta;
 
   const user = await User.findOne({
@@ -120,7 +118,7 @@ exports.loginUser = async (request, meta) => {
   };
 };
 
-exports.refreshToken = async (request, meta) => {
+export const refreshToken = async (request, meta) => {
   const { ipAddress } = meta;
 
   const ACCESS_TOKEN_TTL = 5 * 60;
@@ -183,7 +181,7 @@ exports.refreshToken = async (request, meta) => {
   };
 };
 
-exports.logoutUser = async (request, meta) => {
+export const logoutUser = async (request, meta) => {
   const { ipAddress } = meta;
 
   const logins = await Login.findAll({
@@ -210,38 +208,45 @@ exports.logoutUser = async (request, meta) => {
   return { sessionsLoggedOut: logins.length };
 };
 
-exports.sendOTP = async (emailId) => {
+export const sendOTP = async (emailId) => {
   const user = await User.findOne({ where: { emailId } });
   if (!user) throw new DomainError("User not found", 404);
   if (user.isLocked) throw new DomainError("Account locked", 423);
 
   const otp = generateOTP();
+  const now = new Date();
+
   user.otp = hashOTP(otp);
-  user.otpExpires = new Date(Date.now() + OTP_EXPIRY_MIN * 60 * 1000);
+  user.otpExpires = new Date(now.getTime() + OTP_EXPIRY_MIN * 60 * 1000);
   user.otpResendCount = 1;
-  user.otpLastSentAt = new Date();
+  user.otpLastSentAt = now;
   user.loginFailed = 0;
   await user.save();
 
-  await sendEmail({
-    to: emailId,
-    subject: "Password Reset OTP",
-    html: forgotPasswordTemplate(user.fullName, otp),
-  });
+  try {
+    await sendEmail({
+      to: emailId,
+      subject: "Password Reset OTP",
+      html: forgotPasswordTemplate(user.fullName, otp),
+    });
+  } catch (err) {
+    console.error("Failed to send OTP email:", err);
+    throw new DomainError("Unable to send OTP email", 500);
+  }
 
   return { message: "OTP sent successfully" };
 };
 
-exports.resendOTP = async (emailId) => {
+export const resendOTP = async (emailId) => {
   const user = await User.findOne({ where: { emailId } });
   if (!user) throw new DomainError("User not found", 404);
   if (user.isLocked) throw new DomainError("Account locked", 423);
 
-  // 1️⃣ Cooldown check
-  if (user.otpLastSentAt) {
-    const elapsed = Date.now() - user.otpLastSentAt.getTime();
-    const waitTime = RESEND_COOLDOWN_SEC * 1000 - elapsed;
+  const now = new Date();
 
+  if (user.otpLastSentAt) {
+    const elapsed = now.getTime() - new Date(user.otpLastSentAt).getTime();
+    const waitTime = RESEND_COOLDOWN_SEC * 1000 - elapsed;
     if (waitTime > 0) {
       throw new DomainError(
         `Please wait ${Math.ceil(
@@ -252,32 +257,33 @@ exports.resendOTP = async (emailId) => {
     }
   }
 
-  // 2️⃣ Resend limit check (DO NOT LOCK ACCOUNT)
   if (user.otpResendCount >= MAX_RESENDS) {
     throw new DomainError("OTP resend limit exceeded. Try again later.", 429);
   }
 
-  // 3️⃣ Generate new OTP
   const otp = generateOTP();
   user.otp = hashOTP(otp);
-  user.otpExpires = new Date(Date.now() + OTP_EXPIRY_MIN * 60 * 1000);
+  user.otpExpires = new Date(now.getTime() + OTP_EXPIRY_MIN * 60 * 1000);
   user.otpResendCount += 1;
-  user.otpLastSentAt = new Date();
+  user.otpLastSentAt = now;
   user.loginFailed = 0;
-
   await user.save();
 
-  // 4️⃣ Send OTP email
-  await sendEmail({
-    to: emailId,
-    subject: "OTP for Password Reset",
-    html: forgotPasswordTemplate(user.fullName, otp),
-  });
+  try {
+    await sendEmail({
+      to: emailId,
+      subject: "OTP for Password Reset",
+      html: forgotPasswordTemplate(user.fullName, otp),
+    });
+  } catch (err) {
+    console.error("Failed to resend OTP email:", err);
+    throw new DomainError("Unable to resend OTP email", 500);
+  }
 
   return { message: "OTP resent successfully" };
 };
 
-exports.verifyOTP = async (emailId, otp) => {
+export const verifyOTP = async (emailId, otp) => {
   if (!/^\d{6}$/.test(otp)) {
     throw new DomainError("Invalid OTP format", 400);
   }
@@ -317,7 +323,7 @@ exports.verifyOTP = async (emailId, otp) => {
   return { resetToken };
 };
 
-exports.resetPassword = async (resetToken, newPassword) => {
+export const resetPassword = async (resetToken, newPassword) => {
   const user = await User.findOne({
     where: { resetPasswordToken: hashToken(resetToken) },
   });
