@@ -75,34 +75,78 @@ function forgotPasswordTemplate(name, otp) {
   <!DOCTYPE html>
   <html lang="en">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>OTP Verification</title>
     <style>
-      body { margin: 0; padding: 0; background-color: #f4f6f8; font-family: Arial, Helvetica, sans-serif; }
-      .wrapper { width: 100%; padding: 30px 0; }
-      .container { max-width: 520px; margin: auto; background: #fff; border-radius: 10px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-      .content { color: #374151; font-size: 14px; line-height: 1.6; }
-      .otp-box { margin: 25px 0; text-align: center; }
-      .otp { display: inline-block; padding: 14px 26px; font-size: 28px; font-weight: bold; letter-spacing: 6px; background: #f0f7ff; color: #1d4ed8; border-radius: 8px; border: 1px dashed #93c5fd; }
-      .note { background: #f9fafb; border-left: 4px solid #2563eb; padding: 12px; margin-top: 20px; font-size: 13px; }
-      .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #6b7280; }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f4f6f8;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .container {
+        max-width: 500px;
+        margin: 40px auto;
+        background: #fff;
+        border-radius: 8px;
+        padding: 30px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      }
+      h1 {
+        font-size: 22px;
+        color: #1d4ed8;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      p {
+        font-size: 14px;
+        color: #374151;
+        line-height: 1.6;
+      }
+      .otp-box {
+        text-align: center;
+        margin: 25px 0;
+      }
+      .otp {
+        display: inline-block;
+        padding: 14px 26px;
+        font-size: 28px;
+        font-weight: bold;
+        letter-spacing: 6px;
+        background: #f0f7ff;
+        color: #1d4ed8;
+        border-radius: 6px;
+        border: 1px dashed #93c5fd;
+      }
+      .note {
+        background: #f9fafb;
+        border-left: 4px solid #2563eb;
+        padding: 12px;
+        margin-top: 20px;
+        font-size: 13px;
+      }
+      .footer {
+        margin-top: 30px;
+        text-align: center;
+        font-size: 12px;
+        color: #6b7280;
+      }
+      @media only screen and (max-width: 600px) {
+        .container { padding: 20px; margin: 20px; }
+        .otp { font-size: 24px; padding: 12px 20px; letter-spacing: 4px; }
+      }
     </style>
   </head>
   <body>
-    <div class="wrapper">
-      <div class="container">
-        <div class="content">
-          <p>Hello <strong>${name || "User"}</strong>,</p>
-          <p>We received a request to reset your account password. Please use the One-Time Password (OTP) below to continue.</p>
-          <div class="otp-box"><div class="otp">${otp}</div></div>
-          <p>This OTP is valid for <strong>${
-            process.env.OTP_EXPIRY_MIN || 5
-          } minutes</strong>. Do not share this code with anyone.</p>
-          <div class="note">If you did not request this, you can safely ignore this email. Your account remains secure.</div>
-        </div>
-        <div class="footer">© ${new Date().getFullYear()} Sagrow Infotech. All rights reserved.</div>
-      </div>
+    <div class="container">
+      <h1>OTP Verification</h1>
+      <p>Hello <strong>${name || "User"}</strong>,</p>
+      <p>We received a request to reset your account password. Use the OTP below to continue:</p>
+      <div class="otp-box"><div class="otp">${otp}</div></div>
+      <p>This OTP is valid for <strong>${process.env.OTP_EXPIRY_MIN || 5} minutes</strong>. Do not share this code with anyone.</p>
+      <div class="note">If you did not request this, you can safely ignore this email. Your account remains secure.</div>
+      <div class="footer">© ${new Date().getFullYear()} Sagrow Infotech. All rights reserved.</div>
     </div>
   </body>
   </html>
