@@ -148,7 +148,6 @@ function forgotPasswordTemplate(name, otp) {
   } minutes. Do not share it.</p>
   <p style="font-size:12px; color:#6b7280;">If you did not request this, ignore this email.</p>
 </div>
-
   </body>
   </html>
   `;
