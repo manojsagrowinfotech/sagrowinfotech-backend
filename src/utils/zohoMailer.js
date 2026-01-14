@@ -139,15 +139,16 @@ function forgotPasswordTemplate(name, otp) {
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>OTP Verification</h1>
-      <p>Hello <strong>${name || "User"}</strong>,</p>
-      <p>We received a request to reset your account password. Use the OTP below to continue:</p>
-      <div class="otp-box"><div class="otp">${otp}</div></div>
-      <p>This OTP is valid for <strong>${process.env.OTP_EXPIRY_MIN || 5} minutes</strong>. Do not share this code with anyone.</p>
-      <div class="note">If you did not request this, you can safely ignore this email. Your account remains secure.</div>
-      <div class="footer">© ${new Date().getFullYear()} Sagrow Infotech. All rights reserved.</div>
-    </div>
+<div style="font-family: Arial, sans-serif; color:#374151; padding:20px; background:#fff; border-radius:10px;">
+  <p>Hello <strong>${name || "User"}</strong>,</p>
+  <p>Use this OTP to reset your password:</p>
+  <div style="text-align:center; font-size:28px; font-weight:bold; margin:20px 0;">${otp}</div>
+  <p>This OTP is valid for ${
+    process.env.OTP_EXPIRY_MIN || 5
+  } minutes. Do not share it.</p>
+  <p style="font-size:12px; color:#6b7280;">If you did not request this, ignore this email.</p>
+</div>
+
   </body>
   </html>
   `;
