@@ -1,3 +1,4 @@
+require("dotenv").config();
 const { User, Login, Logout } = require("../models");
 const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
@@ -5,18 +6,15 @@ const bcrypt = require("bcryptjs");
 const { getRoleCode } = require("../enums/Roles");
 const { getStateCode } = require("../enums/States");
 const { hashToken } = require("../utils/token");
-const {
-  generateOTP,
-  hashOTP,
-  generateResetToken,
-} = require("../utils/otpUtil");
-const { sendEmail } = require("../utils/sendEmail");
+const { generateOTP, hashOTP, generateResetToken } = require("../utils/otpUtil");
+const { sendEmail, forgotPasswordTemplate } = require("../utils/zohoMailer");
 const DomainError = require("../errors/DomainError");
 
+
 // Configuration
-const OTP_EXPIRY_MIN = 5;
-const MAX_RESENDS = 3;
-const RESEND_COOLDOWN_SEC = 60;
+const OTP_EXPIRY_MIN = Number(process.env.OTP_EXPIRY_MIN);
+const RESEND_COOLDOWN_SEC = Number(process.env.RESEND_COOLDOWN_SEC);
+const MAX_RESENDS = Number(process.env.MAX_RESENDS);
 
 exports.registerUser = async (request) => {
   const existing = await User.findOne({
@@ -344,104 +342,4 @@ const clearOTP = async (user) => {
   user.otpLastSentAt = null;
   user.loginFailed = 0;
   await user.save();
-};
-
-const forgotPasswordTemplate = (name, otp) => {
-  return `
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>OTP Verification</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        background-color: #f4f6f8;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      .wrapper {
-        width: 100%;
-        padding: 30px 0;
-      }
-      .container {
-        max-width: 520px;
-        margin: auto;
-        background: #ffffff;
-        border-radius: 10px;
-        padding: 30px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      }
-      .content {
-        color: #374151;
-        font-size: 14px;
-        line-height: 1.6;
-      }
-      .otp-box {
-        margin: 25px 0;
-        text-align: center;
-      }
-      .otp {
-        display: inline-block;
-        padding: 14px 26px;
-        font-size: 28px;
-        font-weight: bold;
-        letter-spacing: 6px;
-        background: #f0f7ff;
-        color: #1d4ed8;
-        border-radius: 8px;
-        border: 1px dashed #93c5fd;
-      }
-      .note {
-        background: #f9fafb;
-        border-left: 4px solid #2563eb;
-        padding: 12px;
-        margin-top: 20px;
-        font-size: 13px;
-      }
-      .footer {
-        margin-top: 30px;
-        text-align: center;
-        font-size: 12px;
-        color: #6b7280;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="wrapper">
-      <div class="container">
-
-        <div class="content">
-          <p>Hello <strong>${name || "User"}</strong>,</p>
-
-          <p>
-            We received a request to reset your account password.
-            Please use the One-Time Password (OTP) below to continue.
-          </p>
-
-          <div class="otp-box">
-            <div class="otp">${otp}</div>
-          </div>
-
-          <p>
-            This OTP is valid for <strong>5 minutes</strong>.
-            Do not share this code with anyone.
-          </p>
-
-          <div class="note">
-            If you did not request this, you can safely ignore this email.
-            Your account remains secure.
-          </div>
-        </div>
-
-        <div class="footer">
-          © ${new Date().getFullYear()} Sagrow Infotech. All rights reserved.
-        </div>
-
-      </div>
-    </div>
-  </body>
-  </html>
-  `;
 };
