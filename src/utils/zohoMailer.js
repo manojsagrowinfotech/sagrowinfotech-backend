@@ -43,6 +43,7 @@ async function sendEmail({ to, subject, html }) {
     toAddress: to,
     subject,
     content: html,
+    contentType: "html",
   };
 
   try {
